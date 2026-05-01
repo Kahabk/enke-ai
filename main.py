@@ -1,5 +1,4 @@
 """
-Product Scanner API — Production Ready
 Run: uvicorn main:app --host 0.0.0.0 --port 5000
 """
 
@@ -53,17 +52,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================================
-# SCHEMAS
-# ==========================================
 class ScanResponse(BaseModel):
     success: bool
     data: dict | None = None
     error: str | None = None
 
-# ==========================================
-# IMAGE PREPROCESSING
-# ==========================================
+
 
 def preprocess_image(img_bytes: bytes) -> bytes:
     """
@@ -101,11 +95,6 @@ def preprocess_image(img_bytes: bytes) -> bytes:
     except Exception as e:
         logger.warning(f"Image preprocessing failed: {e} — using original")
         return img_bytes
-
-
-# ==========================================
-# OLLAMA CLIENT
-# ==========================================
 
 def call_ollama(prompt: str, img_bytes: bytes | None = None) -> str:
     url = f"{OLLAMA_BASE_URL}/api/generate"
@@ -384,13 +373,9 @@ async def scan_product(file: UploadFile = File(...)):
     logger.info(f"Received '{file.filename}' type={file.content_type} size={len(img_bytes)/1024:.1f}KB")
 
     try:
-        # Step 1 — preprocess (fix webcam captures)
         img_bytes = preprocess_image(img_bytes)
-
-        # Step 2 — Google Vision: OCR + labels + barcode
         raw = get_raw_data(img_bytes)
 
-        # Step 3 — Ollama vision → structured JSON
         product = generate_product_json(raw, img_bytes)
 
         logger.info(f"Done: {product.get('name')} | MRP: {product.get('mrp')} | Brand: {product.get('brand')}")
@@ -439,16 +424,13 @@ async def scan_invoice(file: UploadFile = File(...)):
         with open(temp_path, "wb") as f:
             f.write(processed_img)
 
-        # OCR - use the file path, not the bytes
         raw_ocr = run_ocr(temp_path)
 
-        # clean OCR
         cleaned_ocr = clean_ocr(raw_ocr)
 
-        # LLM parse
+        
         response = parse_with_llm(cleaned_ocr)
 
-        # extract JSON
         data = extract_json(response)
 
         logger.info(f"Invoice items extracted: {len(data.get('items', []))}")
