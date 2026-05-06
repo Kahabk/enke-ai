@@ -1,5 +1,4 @@
 """
-Product Scanner API — manully coded so may contain some unused functions and rough edges. Focus on main.py for core logic.
 Run: uvicorn main:app --host 0.0.0.0 --port 5000
 """
 
@@ -366,40 +365,30 @@ async def scan_product(
             status_code=415,
             detail=f"Unsupported type: {file.content_type}"
         )
-
-    # Read uploaded image
     img_bytes = await file.read()
-
     # Validate size
     if len(img_bytes) > 15 * 1024 * 1024:
         raise HTTPException(
             status_code=413,
             detail="Image too large"
         )
-
     if len(img_bytes) < 1024:
         raise HTTPException(
             status_code=400,
             detail="Image too small"
         )
-
     logger.info(
         f"Received '{file.filename}' "
         f"type={file.content_type} "
         f"size={len(img_bytes)/1024:.1f}KB"
     )
-
     try:
-
         # 1. Preprocess image
         img_bytes = preprocess_image(img_bytes)
-
         # 2. OCR / Vision
         raw = get_raw_data(img_bytes)
-
         # 3. Generate structured product JSON
         product = generate_product_json(raw, img_bytes)
-
         # 4. Get product name
         product_name = product.get("name", "")
 
